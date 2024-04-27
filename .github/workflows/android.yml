@@ -1,0 +1,38 @@
+name: repack
+
+on:
+#  push:
+#    branches:
+#      - main
+#  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+     
+      - name: Build With Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew assemblerelease --build-cache --parallel --daemon --warning-mode all
+      
+      - name: Sign app APK
+        uses: ilharp/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDir: app/build/outputs/apk/release/
+          signingKey: ${{ secrets.ANDROID_SIGNING_KEY }}
+          keyAlias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          buildToolsVersion: 30.0.3
+      
+      - name: Upload App To Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: com.github.xqe
+          path: app/build/outputs/apk/release/*
